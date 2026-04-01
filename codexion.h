@@ -1,0 +1,55 @@
+#ifndef CODEXION_H
+#define CODEXION_H
+
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+// forward declarations
+typedef struct s_dongle t_dongle;
+typedef struct s_sim    t_sim;
+typedef struct s_coder  t_coder;
+
+// then your structs but WITHOUT typedef, just struct:
+struct s_dongle
+{
+    pthread_mutex_t mtx;
+    int             available;
+    long            released_at;
+};
+
+struct s_sim
+{
+    int             num_coders;
+    long            time_to_burnout;
+    long            time_to_compile;
+    long            time_to_debug;
+    long            time_to_refactor;
+    int             compiles_required;
+    long            dongle_cooldown;
+    char           *scheduler;
+    int             simulation_over;
+    pthread_mutex_t log_mtx;
+    long            start_time;
+    t_dongle       *dongles;
+    t_coder        *coders;
+};
+
+struct s_coder
+{
+    int       id;
+    pthread_t thread;
+    long      last_compile_start;
+    int       compile_count;
+    t_dongle *left;
+    t_dongle *right;
+    t_sim    *sim;
+};
+
+long    get_time_ms(void);
+void    log_action(t_sim *sim, int id, char *action);
+
+#endif
