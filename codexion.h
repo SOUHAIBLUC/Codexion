@@ -33,6 +33,8 @@ struct s_sim
     char           *scheduler;
     int             simulation_over;
     pthread_mutex_t log_mtx;
+    pthread_mutex_t sim_mtx;
+    pthread_mutex_t coder_mtx;
     long            start_time;
     t_dongle       *dongles;
     t_coder        *coders;
@@ -51,5 +53,7 @@ struct s_coder
 
 long    get_time_ms(void);
 void    log_action(t_sim *sim, int id, char *action);
+void *monitor_function(void *arg);
+void clean_up(t_sim *sim);
 
 #endif

@@ -2,39 +2,98 @@
 
 void *coder_function(void *arg)
 {
-    t_coder *coder = (t_coder *)arg;
+    t_dongle *first;
+    t_dongle *secnd;
+    t_coder  *coder = (t_coder *)arg;
 
-    while (coder->sim->simulation_over == 0)
+    if (coder->right > coder->left)
     {
-        pthread_mutex_lock(&coder->left->mtx);
-        pthread_mutex_lock(&coder->right->mtx);
+        first = coder->left;
+        secnd = coder->right;
+    }
+    else
+    {
+        first = coder->right;
+        secnd = coder->left;
+    }
+
+    if (coder->id % 2 == 0)
+        usleep(10);
+    pthread_mutex_lock(&coder->sim->sim_mtx);
+    int over = coder->sim->simulation_over;
+    pthread_mutex_unlock(&coder->sim->sim_mtx);
+    while (over == 0)
+    {
+        long cooldown = coder->sim->dongle_cooldown;
+        pthread_mutex_lock(&first->mtx);
+        long released = first->released_at;
+        pthread_mutex_unlock(&first->mtx);
+        while (get_time_ms() - released < cooldown)
+        {
+            usleep(100);
+            pthread_mutex_lock(&first->mtx);
+            released = first->released_at;
+            pthread_mutex_unlock(&first->mtx);
+        }
+        pthread_mutex_lock(&secnd->mtx);
+        released = secnd->released_at;
+        pthread_mutex_unlock(&secnd->mtx);
+        while (get_time_ms() - secnd->released_at < cooldown)
+        {
+            usleep(100);
+            pthread_mutex_lock(&secnd->mtx);
+            released = secnd->released_at;
+            pthread_mutex_unlock(&secnd->mtx);
+        }
+
+        pthread_mutex_lock(&first->mtx);
+        pthread_mutex_lock(&secnd->mtx);
         log_action(coder->sim, coder->id, "has taken a dongle");
         log_action(coder->sim, coder->id, "has taken a dongle");
         // compile
         log_action(coder->sim, coder->id, "is compiling");
+        pthread_mutex_lock(&coder->sim->coder_mtx);
         coder->last_compile_start = get_time_ms();
+
+        pthread_mutex_unlock(&coder->sim->coder_mtx);
         usleep(coder->sim->time_to_compile * 1000);
+        pthread_mutex_lock(&coder->sim->coder_mtx);
         coder->compile_count++;
+        pthread_mutex_unlock(&coder->sim->coder_mtx);
 
-        pthread_mutex_unlock(&coder->left->mtx);
-        pthread_mutex_unlock(&coder->right->mtx);
-
+        pthread_mutex_unlock(&first->mtx);
+        pthread_mutex_unlock(&secnd->mtx);
+        pthread_mutex_lock(&first->mtx);
+        first->released_at = get_time_ms();
+        pthread_mutex_unlock(&first->mtx);
+        pthread_mutex_lock(&secnd->mtx);
+        secnd->released_at = get_time_ms();
+        pthread_mutex_unlock(&secnd->mtx);
+        // debuging
         log_action(coder->sim, coder->id, "is debugging");
         usleep(coder->sim->time_to_debug * 1000);
-
+        // refactoring
         log_action(coder->sim, coder->id, "is refactoring");
         usleep(coder->sim->time_to_refactor * 1000);
+
+        pthread_mutex_lock(&coder->sim->sim_mtx);
+        over = coder->sim->simulation_over;
+        pthread_mutex_unlock(&coder->sim->sim_mtx);
     }
+    pthread_mutex_lock(&coder->sim->sim_mtx);
     coder->sim->simulation_over = 1;
+    pthread_mutex_unlock(&coder->sim->sim_mtx);
     return NULL;
 }
 
 int main(int ac, char **av)
 {
-    int   x = 0;
-    t_sim sim;
-    int   i ;
-    int   y = 1;
+
+    pthread_t monitor;
+    int       x = 0;
+    t_sim     sim;
+    int       i;
+    int       y = 1;
 
     if (ac == 9)
     {
@@ -93,9 +152,13 @@ int main(int ac, char **av)
             sim.dongles[i].released_at = 0;
             i++;
         }
+
+        pthread_mutex_init(&sim.sim_mtx, NULL);
+        pthread_mutex_init(&sim.coder_mtx, NULL);
         pthread_mutex_init(&sim.log_mtx, NULL);
+
         sim.start_time = get_time_ms();
-        sim.coders     = malloc(sizeof(t_coder) * sim.num_coders);
+        sim.coders     = (t_coder *)calloc(sizeof(t_coder) * sim.num_coders, 1);
         if (!sim.coders)
             return 1;
 
@@ -111,6 +174,8 @@ int main(int ac, char **av)
             j++;
         }
         sim.simulation_over = 0;
+
+        pthread_create(&monitor, NULL, monitor_function, &sim);
         while (x < sim.num_coders)
         {
             pthread_create(
@@ -125,18 +190,7 @@ int main(int ac, char **av)
             pthread_join(sim.coders[x].thread, NULL);
             x++;
         }
-        while (true)
-        {
-            for (size_t i = 0; i < sim.num_coders; i++)
-            {
-                if (get_time_ms() - sim.coders->last_compile_start >= sim.time_to_burnout)
-                    sim.simulation_over = 1;
-                    break;
-            }
-            
-            
-        }
-        
+        pthread_join(monitor, NULL);
 
         printf("coders: %d\n", sim.num_coders);
         printf("burnout: %ld\n", sim.time_to_burnout);
@@ -150,16 +204,7 @@ int main(int ac, char **av)
         usleep(500 * 1000); // sleep 500ms
         printf("current time: %ld ms\n", get_time_ms());
 
-        i = 0;
-        while (i < sim.num_coders)
-        {
-
-            pthread_mutex_destroy(&sim.dongles[i].mtx);
-            i++;
-        }
-        pthread_mutex_destroy(&sim.log_mtx);
-        free(sim.dongles);
-        free(sim.coders);
+        clean_up(&sim);
     }
     else
     {
