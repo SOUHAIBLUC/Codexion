@@ -1,90 +1,6 @@
 #include "codexion.h"
 
-void *coder_function(void *arg)
-{
-    t_dongle *first;
-    t_dongle *secnd;
-    t_coder  *coder = (t_coder *)arg;
 
-    if (coder->right > coder->left)
-    {
-        first = coder->left;
-        secnd = coder->right;
-    }
-    else
-    {
-        first = coder->right;
-        secnd = coder->left;
-    }
-
-    if (coder->id % 2 == 0)
-        usleep(10);
-    pthread_mutex_lock(&coder->sim->sim_mtx);
-    int over = coder->sim->simulation_over;
-    pthread_mutex_unlock(&coder->sim->sim_mtx);
-    while (over == 0)
-    {
-        long cooldown = coder->sim->dongle_cooldown;
-        pthread_mutex_lock(&first->mtx);
-        long released = first->released_at;
-        pthread_mutex_unlock(&first->mtx);
-        while (get_time_ms() - released < cooldown)
-        {
-            usleep(100);
-            pthread_mutex_lock(&first->mtx);
-            released = first->released_at;
-            pthread_mutex_unlock(&first->mtx);
-        }
-        pthread_mutex_lock(&secnd->mtx);
-        released = secnd->released_at;
-        pthread_mutex_unlock(&secnd->mtx);
-        while (get_time_ms() - secnd->released_at < cooldown)
-        {
-            usleep(100);
-            pthread_mutex_lock(&secnd->mtx);
-            released = secnd->released_at;
-            pthread_mutex_unlock(&secnd->mtx);
-        }
-
-        pthread_mutex_lock(&first->mtx);
-        pthread_mutex_lock(&secnd->mtx);
-        log_action(coder->sim, coder->id, "has taken a dongle");
-        log_action(coder->sim, coder->id, "has taken a dongle");
-        // compile
-        log_action(coder->sim, coder->id, "is compiling");
-        pthread_mutex_lock(&coder->sim->coder_mtx);
-        coder->last_compile_start = get_time_ms();
-
-        pthread_mutex_unlock(&coder->sim->coder_mtx);
-        usleep(coder->sim->time_to_compile * 1000);
-        pthread_mutex_lock(&coder->sim->coder_mtx);
-        coder->compile_count++;
-        pthread_mutex_unlock(&coder->sim->coder_mtx);
-
-        pthread_mutex_unlock(&first->mtx);
-        pthread_mutex_unlock(&secnd->mtx);
-        pthread_mutex_lock(&first->mtx);
-        first->released_at = get_time_ms();
-        pthread_mutex_unlock(&first->mtx);
-        pthread_mutex_lock(&secnd->mtx);
-        secnd->released_at = get_time_ms();
-        pthread_mutex_unlock(&secnd->mtx);
-        // debuging
-        log_action(coder->sim, coder->id, "is debugging");
-        usleep(coder->sim->time_to_debug * 1000);
-        // refactoring
-        log_action(coder->sim, coder->id, "is refactoring");
-        usleep(coder->sim->time_to_refactor * 1000);
-
-        pthread_mutex_lock(&coder->sim->sim_mtx);
-        over = coder->sim->simulation_over;
-        pthread_mutex_unlock(&coder->sim->sim_mtx);
-    }
-    pthread_mutex_lock(&coder->sim->sim_mtx);
-    coder->sim->simulation_over = 1;
-    pthread_mutex_unlock(&coder->sim->sim_mtx);
-    return NULL;
-}
 
 int main(int ac, char **av)
 {
@@ -148,8 +64,16 @@ int main(int ac, char **av)
         while (i < sim.num_coders)
         {
             pthread_mutex_init(&sim.dongles[i].mtx, NULL);
-            sim.dongles[i].available   = 1;
+            pthread_cond_init(&sim.dongles[i].cond, NULL);
+            sim.dongles[i].head        = 0;
+            sim.dongles[i].tail        = 0;
+            sim.dongles[i].queue_siz   = 0;
             sim.dongles[i].released_at = 0;
+            sim.dongles[i].available   = 1;
+            sim.dongles[i].queue       = calloc(sim.num_coders, sizeof(int));
+            if (!sim.dongles[i].queue)
+                return 1;
+
             i++;
         }
 

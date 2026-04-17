@@ -2,6 +2,7 @@
 #define CODEXION_H
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,9 +17,15 @@ typedef struct s_coder  t_coder;
 // then your structs but WITHOUT typedef, just struct:
 struct s_dongle
 {
+    pthread_cond_t  cond;
     pthread_mutex_t mtx;
+    int            *queue;
+    int             head;
+    int             tail;
+    int             queue_siz;
     int             available;
     long            released_at;
+    int             id;
 };
 
 struct s_sim
@@ -49,11 +56,13 @@ struct s_coder
     t_dongle *left;
     t_dongle *right;
     t_sim    *sim;
+    bool      start;
 };
 
-long    get_time_ms(void);
-void    log_action(t_sim *sim, int id, char *action);
+long  get_time_ms(void);
+void  log_action(t_sim *sim, int id, char *action);
 void *monitor_function(void *arg);
-void clean_up(t_sim *sim);
+void  clean_up(t_sim *sim);
+void *coder_function(void *arg);
 
 #endif
