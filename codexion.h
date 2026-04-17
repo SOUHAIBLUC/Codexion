@@ -63,6 +63,16 @@ long  get_time_ms(void);
 void  log_action(t_sim *sim, int id, char *action);
 void *monitor_function(void *arg);
 void  clean_up(t_sim *sim);
+void  destroy_dongle(t_dongle *d);
+void  cleanup_dongles_partial(t_sim *sim, int count);
+int   coder_burned_out(t_sim *sim, int idx);
+int   coder_finished(t_sim *sim, int idx);
+int   monitor_iteration(t_sim *sim);
 void *coder_function(void *arg);
+int   parse_args(int ac, char **av, t_sim *sim);
+int   init_sim(t_sim *sim);
+int   init_dongles(t_sim *sim);
+int   init_coders(t_sim *sim);
+int   run_simulation(t_sim *sim);
 
 #endif

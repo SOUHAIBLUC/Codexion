@@ -5,9 +5,7 @@ int init_sim(t_sim *sim)
     pthread_mutex_init(&sim->log_mtx, NULL);
     pthread_mutex_init(&sim->sim_mtx, NULL);
     sim->start_time = get_time_ms();
-    sim->coders     = calloc(sizeof(t_coder) * sim->num_coders, 1);
-    if (!sim->coders)
-        return 1;
+
     return 0;
 }
 
@@ -28,20 +26,7 @@ int init_dongles(t_sim *sim)
         sim->dongles[i].queue = calloc(sim->num_coders, sizeof(int));
         if (!sim->dongles[i].queue)
         {
-            int k = 0;
-            while (k < i)
-            {
-                if (sim->dongles[k].queue)
-                {
-                    pthread_cond_destroy(&sim->dongles[k].cond);
-                    pthread_mutex_destroy(&sim->dongles[k].mtx);
-                    free(sim->dongles[k].queue);
-                    sim->dongles[k].queue = NULL;
-                }
-                k++;
-            }
-            free(sim->dongles);
-            sim->dongles = NULL;
+            cleanup_dongles_partial(sim, i);
             return 1;
         }
         pthread_mutex_init(&sim->dongles[i].mtx, NULL);
@@ -64,6 +49,21 @@ void destroy_dongle(t_dongle *d)
     pthread_mutex_destroy(&d->mtx);
     free(d->queue);
     d->queue = NULL;
+}
+
+void cleanup_dongles_partial(t_sim *sim, int count)
+{
+    int k = 0;
+    while (k < count)
+    {
+        destroy_dongle(&sim->dongles[k]);
+        k++;
+    }
+    if (sim->dongles)
+    {
+        free(sim->dongles);
+        sim->dongles = NULL;
+    }
 }
 
 int init_coders(t_sim *sim)

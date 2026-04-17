@@ -12,7 +12,7 @@ int parse_args(int ac, char **av, t_sim *sim)
         return 1;
     }
 
-    while (y < 7)
+    while (y <= 7)
     {
         i = 0;
 		if (!av[y] || av[y][0] == '\0')
@@ -24,7 +24,7 @@ int parse_args(int ac, char **av, t_sim *sim)
         {
             if (av[y][i] < '0' || av[y][i] > '9')
             {
-                printf(stderr, "Error: numeric arguments only (arg %d)\n", y);
+                fprintf(stderr, "Error: numeric arguments only (arg %d)\n", y);
                 return 1;
             }
             i++;
@@ -41,22 +41,22 @@ int parse_args(int ac, char **av, t_sim *sim)
     sim->dongle_cooldown   = atoi(av[7]);
     sim->scheduler         = av[8];
 
-    if (atoi(av[1]) <= 0 || atoi(av[2]) <= 0 || atoi(av[3]) <= 0 ||
-        atoi(av[4]) <= 0 || atoi(av[5]) <= 0 || atoi(av[6]) <= 0 ||
-        atoi(av[7]) <= 0)
+    if (sim->num_coders <= 0 || sim->time_to_burnout <= 0 || sim->time_to_compile <= 0 ||
+        sim->time_to_debug <= 0 || sim->time_to_refactor <= 0 || sim->compiles_required <= 0 ||
+        sim->dongle_cooldown <= 0)
     {
-        printf(stderr, "Error: wrong value\n");
+        fprintf(stderr, "Error: wrong value\n");
         return 1;
     }
     if (!(strcmp(sim->scheduler, "fifo") == 0 ||
           strcmp(sim->scheduler, "edf") == 0))
     {
-        printf(stderr, "Error: wrong word\n");
+        fprintf(stderr, "Error: wrong word\n");
         return 1;
     }
     if (sim->num_coders < 2)
     {
-        printf(stderr, "Error: should be at least 2\n");
+        fprintf(stderr, "Error: should be at least 2\n");
         return 1;
     }
 

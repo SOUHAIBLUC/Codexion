@@ -12,6 +12,55 @@ long get_time_ms(void)
     return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 }
 
+int coder_burned_out(t_sim *sim, int idx)
+{
+    int res = 0;
+    pthread_mutex_lock(&sim->coder_mtx);
+    if (get_time_ms() - sim->coders[idx].last_compile_start >=
+        sim->time_to_burnout)
+        res = 1;
+    pthread_mutex_unlock(&sim->coder_mtx);
+    return res;
+}
+
+int coder_finished(t_sim *sim, int idx)
+{
+    int res = 0;
+    pthread_mutex_lock(&sim->coder_mtx);
+    if (sim->coders[idx].compile_count >= sim->compiles_required)
+        res = 1;
+    pthread_mutex_unlock(&sim->coder_mtx);
+    return res;
+}
+
+int monitor_iteration(t_sim *sim)
+{
+    int finished = 0;
+    int y = 0;
+    while (y < sim->num_coders)
+    {
+        if (coder_burned_out(sim, y))
+        {
+            log_action(sim, sim->coders[y].id, "burned out");
+            pthread_mutex_lock(&sim->sim_mtx);
+            sim->simulation_over = 1;
+            pthread_mutex_unlock(&sim->sim_mtx);
+            return 1;
+        }
+        if (coder_finished(sim, y))
+            finished++;
+        y++;
+    }
+    if (finished == sim->num_coders)
+    {
+        pthread_mutex_lock(&sim->sim_mtx);
+        sim->simulation_over = 1;
+        pthread_mutex_unlock(&sim->sim_mtx);
+        return 1;
+    }
+    return 0;
+}
+
 void *monitor_function(void *arg)
 {
     t_sim *sim = (t_sim *)arg;
@@ -20,33 +69,8 @@ void *monitor_function(void *arg)
     pthread_mutex_unlock(&sim->sim_mtx);
     while (over == 0)
     {
-        int    i = 0;
-        int y = 0;
-        while (y < sim->num_coders)
-        {
-            pthread_mutex_lock(&sim->coder_mtx);
-            if (get_time_ms() - sim->coders[y].last_compile_start >=
-                sim->time_to_burnout)
-            {
-                pthread_mutex_unlock(&sim->coder_mtx);
-                log_action(sim, sim->coders[y].id, "burned out");
-                pthread_mutex_lock(&sim->sim_mtx);
-                sim->simulation_over = 1;
-                over                 = 1;
-                pthread_mutex_unlock(&sim->sim_mtx);
-                break;
-            }
-            if (sim->coders[y].compile_count >= sim->compiles_required)
-                i++;
-            pthread_mutex_unlock(&sim->coder_mtx);
-            y++;
-        }
-        if (i == sim->num_coders)
-        {
-            pthread_mutex_lock(&sim->sim_mtx);
-            sim->simulation_over = 1;
-            pthread_mutex_unlock(&sim->sim_mtx);
-        }
+        if (monitor_iteration(sim))
+            break;
         pthread_mutex_lock(&sim->sim_mtx);
         over = sim->simulation_over;
         pthread_mutex_unlock(&sim->sim_mtx);
@@ -55,38 +79,4 @@ void *monitor_function(void *arg)
     return NULL;
 }
 
-void clean_up(t_sim *sim)
-{
 
-    if (!sim)
-        return;
-
-    int i = 0;
-    if (sim->dongles)
-    {
-        while (i < sim->num_coders)
-        {
-            if (sim->dongles[i].queue)
-            {
-                pthread_cond_destroy(&sim->dongles[i].cond);
-                pthread_mutex_destroy(&sim->dongles[i].mtx);
-                free(sim->dongles[i].queue);
-                sim->dongles[i].queue = NULL;
-            }
-            i++;
-        }
-        free(sim->dongles);
-        sim->dongles = NULL;
-    }
-
-    /* destroy mutexes if they were initialized */
-    pthread_mutex_destroy(&sim->sim_mtx);
-    pthread_mutex_destroy(&sim->coder_mtx);
-    pthread_mutex_destroy(&sim->log_mtx);
-
-    if (sim->coders)
-    {
-        free(sim->coders);
-        sim->coders = NULL;
-    }
-}
