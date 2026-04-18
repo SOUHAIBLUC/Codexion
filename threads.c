@@ -3,7 +3,6 @@
 
 int start_monitor(t_sim *sim, pthread_t *monitor)
 {
-    int x = 0;
     if (pthread_create(monitor, NULL, monitor_function, sim) != 0)
         return 1;
     return 0;

@@ -2,7 +2,7 @@
 
 int parse_args(int ac, char **av, t_sim *sim)
 {
-    int   x = 0;
+
     int   i;
     int   y = 1;
 

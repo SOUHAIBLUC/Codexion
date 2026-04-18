@@ -13,6 +13,7 @@ void clean_up(t_sim *sim)
         while (i < sim->num_coders)
         {
             destroy_dongle(&sim->dongles[i]);
+            free(sim->dongles[i].heap);
             i++;
         }
         free(sim->dongles);
