@@ -29,3 +29,18 @@ void clean_up(t_sim *sim)
         sim->coders = NULL;
     }
 }
+void acquire_dongles(t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown)
+{
+    if (strcmp(coder->sim->scheduler, "fifo") == 0)
+        acquire_dongles_fifo(coder, first, secnd, cooldown);
+    else
+        acquire_dongles_edf(coder, first, secnd, cooldown);
+}
+
+void release_dongles(t_coder *coder, t_dongle *first, t_dongle *secnd)
+{
+    if (strcmp(coder->sim->scheduler, "fifo") == 0)
+        release_dongles_fifo(coder, first, secnd);
+    else
+        release_dongles_edf(first, secnd);
+}

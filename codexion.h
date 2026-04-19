@@ -10,10 +10,10 @@
 #include <unistd.h>
 
 // forward declarations
-typedef struct s_dongle t_dongle;
-typedef struct s_sim    t_sim;
-typedef struct s_coder  t_coder;
-typedef struct s_heap_entry t_heap_entry; 
+typedef struct s_dongle     t_dongle;
+typedef struct s_sim        t_sim;
+typedef struct s_coder      t_coder;
+typedef struct s_heap_entry t_heap_entry;
 
 struct s_heap_entry
 {
@@ -67,8 +67,6 @@ struct s_coder
     bool      start;
 };
 
-
-
 long  get_time_ms(void);
 void  log_action(t_sim *sim, int id, char *action);
 void *monitor_function(void *arg);
@@ -84,12 +82,22 @@ int   init_sim(t_sim *sim);
 int   init_dongles(t_sim *sim);
 int   init_coders(t_sim *sim);
 int   run_simulation(t_sim *sim);
-void    heap_insert(t_dongle *d, int coder_id, long deadline);
-void    heap_remove(t_dongle *d);
-int     heap_peek(t_dongle *d);
-void    acquire_dongles_fifo(t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown);
-void    acquire_dongles_edf(t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown);
-void    release_dongles_fifo(t_coder *coder, t_dongle *first, t_dongle *secnd);
-void    release_dongles_edf(t_coder *coder, t_dongle *first, t_dongle *secnd);
+void  heap_insert(t_dongle *d, int coder_id, long deadline);
+void  heap_remove(t_dongle *d);
+int   heap_peek(t_dongle *d);
+void  acquire_dongles_fifo(
+    t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown
+);
+void acquire_dongles_edf(
+    t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown
+);
+void release_dongles_fifo(t_coder *coder, t_dongle *first, t_dongle *secnd);
+void release_dongles_edf(t_dongle *first, t_dongle *secnd);
+int coder_work(t_coder *coder);
+void init_coder_order(t_coder *coder, t_dongle **first, t_dongle **secnd);
+void acquire_dongles(
+    t_coder *coder, t_dongle *first, t_dongle *secnd, long cooldown
+);
+void release_dongles(t_coder *coder, t_dongle *first, t_dongle *secnd);
 
 #endif

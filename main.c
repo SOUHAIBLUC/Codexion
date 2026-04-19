@@ -14,7 +14,6 @@ void print_info(t_sim *sim)
     printf("cooldown: %ld\n", sim->dongle_cooldown);
     printf("scheduler: %s\n", sim->scheduler);
     printf("current time: %ld ms\n", get_time_ms());
-    usleep(500 * 1000);
     printf("current time: %ld ms\n", get_time_ms());
 }
 

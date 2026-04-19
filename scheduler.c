@@ -45,7 +45,6 @@ void acquire_dongles_edf(
     pthread_mutex_lock(&secnd->mtx);
     heap_insert(secnd, coder->id, deadline);
     pthread_mutex_unlock(&secnd->mtx);
-    // waiting
     pthread_mutex_lock(&first->mtx);
     while (heap_peek(first) != coder->id ||
            get_time_ms() - first->released_at < cooldown)
@@ -79,7 +78,7 @@ void release_dongles_fifo(t_coder *coder, t_dongle *first, t_dongle *secnd)
     pthread_mutex_unlock(&secnd->mtx);
 }
 
-void release_dongles_edf(t_coder *coder, t_dongle *first, t_dongle *secnd)
+void release_dongles_edf(t_dongle *first, t_dongle *secnd)
 {
     heap_remove(first);
     first->released_at = get_time_ms();
