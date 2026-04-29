@@ -12,22 +12,26 @@
 
 #include "codexion.h"
 
-static int	coder_cycle(t_coder *coder, t_dongle *first, t_dongle *secnd,
-		long cooldown)
+static int coder_cycle(t_coder *coder, t_dongle *first,
+        t_dongle *secnd, long cooldown)
 {
-	acquire_dongles(coder, first, secnd, cooldown);
-	if (get_over(coder->sim))
-	{
-		release_dongles(coder, first, secnd);
-		return (1);
-	}
-	if (coder_work(coder))
-	{
-		release_dongles(coder, first, secnd);
-		return (1);
-	}
-	release_dongles(coder, first, secnd);
-	return (0);
+    acquire_dongles(coder, first, secnd, cooldown);
+    if (get_over(coder->sim))
+    {
+        release_dongles(coder, first, secnd);
+        return (1);
+    }
+    if (coder_work(coder))
+    {
+        release_dongles(coder, first, secnd);
+        return (1);
+    }
+    release_dongles(coder, first, secnd); 
+    log_action(coder->sim, coder->id, "is debugging");
+    usleep(coder->sim->time_to_debug * 1000);
+    log_action(coder->sim, coder->id, "is refactoring");
+    usleep(coder->sim->time_to_refactor * 1000);
+    return (0);
 }
 
 void	*coder_function(void *arg)
@@ -73,24 +77,20 @@ static void	do_compile(t_coder *coder)
 	pthread_mutex_unlock(&coder->sim->coder_mtx);
 }
 
-int	coder_work(t_coder *coder)
+int coder_work(t_coder *coder)
 {
-	int	already_done;
+    int already_done;
 
-	log_action(coder->sim, coder->id, "has taken a dongle");
-	log_action(coder->sim, coder->id, "has taken a dongle");
-	if (get_over(coder->sim))
-		return (1);
-	pthread_mutex_lock(&coder->sim->coder_mtx);
-	already_done = (coder->compile_count >= coder->sim->compiles_required);
-	pthread_mutex_unlock(&coder->sim->coder_mtx);
-	if (already_done)
-		return (1);
-	log_action(coder->sim, coder->id, "is compiling");
-	do_compile(coder);
-	log_action(coder->sim, coder->id, "is debugging");
-	usleep(coder->sim->time_to_debug * 1000);
-	log_action(coder->sim, coder->id, "is refactoring");
-	usleep(coder->sim->time_to_refactor * 1000);
-	return (0);
+    log_action(coder->sim, coder->id, "has taken a dongle");
+    log_action(coder->sim, coder->id, "has taken a dongle");
+    if (get_over(coder->sim))
+        return (1);
+    pthread_mutex_lock(&coder->sim->coder_mtx);
+    already_done = (coder->compile_count >= coder->sim->compiles_required);
+    pthread_mutex_unlock(&coder->sim->coder_mtx);
+    if (already_done)
+        return (1);
+    log_action(coder->sim, coder->id, "is compiling");
+    do_compile(coder);
+    return (0);   // ← return here, before debug/refactor!
 }
