@@ -6,7 +6,7 @@
 /*   By: so-ait-l <so-ait-l@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/23 07:55:49 by so-ait-l          #+#    #+#             */
-/*   Updated: 2026/04/26 11:02:17 by so-ait-l         ###   ########.fr       */
+/*   Updated: 2026/05/04 08:25:33 by so-ait-l         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,6 +89,7 @@ void						destroy_dongle(t_dongle *d);
 void						cleanup_dongles_partial(t_sim *sim, int count);
 int							coder_burned_out(t_sim *sim, int idx);
 int							coder_finished(t_sim *sim, int idx);
+void						*ft_calloc(size_t count, size_t size);
 int							monitor_iteration(t_sim *sim);
 void						*coder_function(void *arg);
 int							parse_args(int ac, char **av, t_sim *sim);
@@ -120,4 +121,7 @@ void						fifo_enqueue(t_coder *coder, t_dongle *first,
 								t_dongle *secnd);
 void						fifo_wait_for_turn(t_coder *coder, t_dongle *first,
 								t_dongle *secnd, long cooldown);
+void						edf_enqueue(t_coder *coder, t_dongle *first,
+								t_dongle *secnd);
+void						smart_usleep(long ms, t_sim *sim);
 #endif

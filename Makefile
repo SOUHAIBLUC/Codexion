@@ -1,7 +1,7 @@
 NAME = codexion
 
 CC = cc
-FLAGS = -Wall -Wextra -Werror
+FLAGS = -Wall -Wextra -Werror -pthread
 
 SRCS =  edf_helper.c \
         scheduler.c \

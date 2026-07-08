@@ -6,7 +6,7 @@
 /*   By: so-ait-l <so-ait-l@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/26 09:37:50 by so-ait-l          #+#    #+#             */
-/*   Updated: 2026/04/26 10:16:27 by so-ait-l         ###   ########.fr       */
+/*   Updated: 2026/05/05 08:39:45 by so-ait-l         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ void	*monitor_function(void *arg)
 		pthread_mutex_lock(&sim->sim_mtx);
 		over = sim->simulation_over;
 		pthread_mutex_unlock(&sim->sim_mtx);
-		usleep(1000);
+		usleep(5);
 	}
 	return (NULL);
 }

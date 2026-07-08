@@ -6,13 +6,31 @@
 /*   By: so-ait-l <so-ait-l@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/26 09:37:33 by so-ait-l          #+#    #+#             */
-/*   Updated: 2026/04/26 10:53:11 by so-ait-l         ###   ########.fr       */
+/*   Updated: 2026/04/28 14:58:44 by so-ait-l         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static int	init_single_dongle(t_sim *sim, int i);
+static int	init_single_dongle(t_sim *sim, int i)
+{
+	sim->dongles[i].heap = ft_calloc(sim->num_coders, sizeof(t_heap_entry));
+	if (!sim->dongles[i].heap)
+		return (1);
+	sim->dongles[i].queue = ft_calloc(sim->num_coders, sizeof(int));
+	if (!sim->dongles[i].queue)
+		return (1);
+	pthread_mutex_init(&sim->dongles[i].mtx, NULL);
+	pthread_cond_init(&sim->dongles[i].cond, NULL);
+	sim->dongles[i].heap_size = 0;
+	sim->dongles[i].head = 0;
+	sim->dongles[i].tail = 0;
+	sim->dongles[i].queue_siz = 0;
+	sim->dongles[i].released_at = 0;
+	sim->dongles[i].available = 1;
+	sim->dongles[i].id = i;
+	return (0);
+}
 
 int	init_sim(t_sim *sim)
 {
@@ -58,7 +76,7 @@ int	init_coders(t_sim *sim)
 
 	pthread_mutex_init(&sim->coder_mtx, NULL);
 	sim->start_time = get_time_ms();
-	sim->coders = (t_coder *)calloc(sizeof(t_coder) * sim->num_coders, 1);
+	sim->coders = (t_coder *)ft_calloc(sizeof(t_coder) * sim->num_coders, 1);
 	if (!sim->coders)
 		return (1);
 	j = 0;
@@ -72,25 +90,5 @@ int	init_coders(t_sim *sim)
 		j++;
 	}
 	sim->simulation_over = 0;
-	return (0);
-}
-
-static int	init_single_dongle(t_sim *sim, int i)
-{
-	sim->dongles[i].heap = calloc(sim->num_coders, sizeof(t_heap_entry));
-	if (!sim->dongles[i].heap)
-		return (1);
-	sim->dongles[i].queue = calloc(sim->num_coders, sizeof(int));
-	if (!sim->dongles[i].queue)
-		return (1);
-	pthread_mutex_init(&sim->dongles[i].mtx, NULL);
-	pthread_cond_init(&sim->dongles[i].cond, NULL);
-	sim->dongles[i].heap_size = 0;
-	sim->dongles[i].head = 0;
-	sim->dongles[i].tail = 0;
-	sim->dongles[i].queue_siz = 0;
-	sim->dongles[i].released_at = 0;
-	sim->dongles[i].available = 1;
-	sim->dongles[i].id = i;
 	return (0);
 }
